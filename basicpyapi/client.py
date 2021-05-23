@@ -5,7 +5,6 @@ async def func():
     async with websockets.connect('ws://localhost:5000') as wss:
         await wss.send(dumps({'event': 'authenticate'}))
 
-
         while True:
             print(await wss.recv())
 
