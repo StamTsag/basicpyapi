@@ -26,6 +26,9 @@ class Server:
         # Used by __path_switcher and __request_switchers.
         self.__current_error: str = None
 
+        # telemetry
+        self.__total_requests: int = 0
+
     def __format_res(self, event_name: str, **kwargs) -> dict:
         return dumps({'event': f'{event_name}_reply', **kwargs})
 
@@ -89,6 +92,8 @@ class Server:
                 if result and not self.__current_error:
                     await wss.send(result)
                     print(f'Reply sent for \'{data["event"]}\'.')
+                    self.__total_requests += 1
+                    print(f'Requests: {self.__total_requests}')
                 else:
                     await wss.send(self.__current_error)
 
