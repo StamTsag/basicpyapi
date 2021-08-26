@@ -1,0 +1,19 @@
+body {
+    background-color: #6f6f6f;
+}
+
+button {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: larger;
+    background-color: #5f5f5f;
+    border: 1px solid black;
+}
+
+button:hover {
+    background-color: #1f1f1f;
+}
+
+#main {
+    font-family: Arial, Helvetica, sans-serif; 
+    text-align: center;
+}
