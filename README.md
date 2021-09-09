@@ -1,4 +1,4 @@
-<p align='center'><img src='https://i.ibb.co/c3TFsYd/basicpyapi-icon.png' alt='Basicpyapi icon'></p>
+<p align='center'><img src='https://i.ibb.co/p1p5Pzk/basicpyapi-icon.png' alt='Basicpyapi icon'></p>
 
 ![GitHub](https://img.shields.io/github/license/Shadofer/basicpyapi) ![GitHub Repo stars](https://img.shields.io/github/stars/Shadofer/basicpyapi?style=social) ![GitHub forks](https://img.shields.io/github/forks/Shadofer/basicpyapi?style=social) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Shadofer/basicpyapi) ![Lines of code](https://img.shields.io/tokei/lines/github/Shadofer/basicpyapi)
 
