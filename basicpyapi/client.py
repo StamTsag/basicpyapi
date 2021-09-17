@@ -1,14 +1,27 @@
-import asyncio, websockets
+import asyncio
+
+import websockets
+
 from json import dumps, loads
 
-async def func():
+def main():
+    loop = asyncio.get_event_loop()
+    
+    try:
+        loop.run_until_complete(connection_stream())
+        loop.run_forever()
+        
+    except KeyboardInterrupt:
+        pass
+
+async def connection_stream():
     async with websockets.connect('ws://localhost:5000') as wss:
         await wss.send(dumps({'event': 'authenticate'}))
 
         while True:
-            print(await wss.recv())
+            auth_reply = loads(await wss.recv())
+            
+            print(f'Authentication UID: {auth_reply["uid"]}')
 
-loop = asyncio.get_event_loop()
-
-loop.run_until_complete(func())
-loop.run_forever()
+if __name__ == '__main__':
+    main()
