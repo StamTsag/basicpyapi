@@ -22,13 +22,14 @@ SUPPORTED_PATHS = ['/']
 # ROOT /
 SUPPORTED_REQUESTS_ROOT = ['authenticate']
 
-# Used by __path_switcher and __request_switchers.
+# Used by path_switcher and request_switchers.
 current_error: str = None
 
-# telemetry
+# Telemetry
 total_requests: int = 0
 
 def main():
+    # Starts the infinite asyncio loop and handles keyboard exits.
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server)
     
@@ -38,9 +39,26 @@ def main():
         pass
 
 def format_res(event_name: str, **kwargs) -> dict:
+    """Constructs a basic formatted response with an event and extra arguments.
+
+    Args:
+        event_name (str): The name of the called event.
+
+    Returns:
+        dict: The formatted response.
+    """
     return dumps({'event': f'{event_name}Reply', **kwargs})
 
 def format_res_err(event_name: str, error_message: str) -> dict:
+    """Same as format_res but it also takes a custom error message to display.
+
+    Args:
+        event_name (str): The name of the called event.
+        error_message (str): The error message to display.
+
+    Returns:
+        dict: The formatted error response.
+    """
     return dumps({'event': f'{event_name}Error', 'message': error_message})
 
 def request_switcher_root(data: dict) -> dict:
@@ -85,7 +103,7 @@ def path_switcher(path: str, data: dict) -> dict:
         current_error = format_res_err('global', f'The path {path} couldn\'t be found.')
 
 async def serve(wss: WebSocketClientProtocol, path: str) -> None:
-        """Called only by websockets.serve, provides start_server with info.
+        """Called only by websockets.serve.
 
         Args:
             wss (WebSocketClientProtocol): The websocket client.
