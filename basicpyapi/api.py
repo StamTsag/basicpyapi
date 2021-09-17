@@ -14,6 +14,8 @@ from json.decoder import JSONDecodeError
 
 from socket import gethostname, gethostbyname
 
+from dotenv import load_dotenv
+
 PING_INTERVAL = 5
 PING_TIMEOUT = 5
 
@@ -29,7 +31,15 @@ current_error: str = None
 total_requests: int = 0
 
 def main():
-    # Starts the infinite asyncio loop and handles keyboard exits.
+    # Handles server startup.
+    load_dotenv()
+    
+    port = environ.get('PORT', 5000)
+
+    start_server = ws_serve(serve, '0.0.0.0', port)
+
+    print(f'Server running at: {gethostbyname(gethostname())}:{port}')
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server)
     
@@ -140,13 +150,6 @@ async def serve(wss: WebSocketClientProtocol, path: str) -> None:
                     
         except ConnectionClosed:
             print('A client has disconnected.')
-
-# for heroku
-port = environ.get('PORT', 5000)
-
-start_server = ws_serve(serve, '0.0.0.0', port)
-
-print(f'Server running at: {gethostbyname(gethostname())}:{port}')
 
 if __name__ == '__main__':
     main()
