@@ -45,10 +45,11 @@ def main():
     
     try:
         loop.run_forever()
+        
     except KeyboardInterrupt:
         pass
 
-def format_res(event_name: str, **kwargs) -> dict:
+def format_res(event_name: str, is_no_event_response: bool = False, **kwargs) -> dict:
     """Constructs a basic formatted response with an event and extra arguments.
 
     Args:
@@ -57,9 +58,14 @@ def format_res(event_name: str, **kwargs) -> dict:
     Returns:
         dict: The formatted response.
     """
-    return dumps({'event': f'{event_name}Reply', **kwargs})
+    final_dict = {'event': f'{event_name}Reply', **kwargs}
+    
+    if not is_no_event_response:
+        final_dict['originalEvent'] = event_name
+    
+    return dumps(final_dict)
 
-def format_res_err(event_name: str, error_message: str) -> dict:
+def format_res_err(event_name: str, error_message: str, is_no_event_response: bool = False) -> dict:
     """Same as format_res but it also takes a custom error message to display.
 
     Args:
@@ -69,8 +75,13 @@ def format_res_err(event_name: str, error_message: str) -> dict:
     Returns:
         dict: The formatted error response.
     """
-    return dumps({'event': f'{event_name}Error', 'message': error_message})
-
+    final_dict = {'event': f'{event_name}Error', 'message': error_message}
+    
+    if not is_no_event_response:
+        final_dict['originalEvent'] = event_name
+    
+    return dumps(final_dict)
+    
 def request_switcher_root(data: dict) -> dict:
     """Switches response according to the data provided. Only for '/', root.
 
@@ -90,10 +101,10 @@ def request_switcher_root(data: dict) -> dict:
                 return format_res(event, uid=str(uuid4()))
 
         else:
-            current_error = format_res_err('invalidRootEvent', 'The requested event doesn\'t exist.')
+            current_error = format_res_err('rootEvent', f'The requested event doesn\'t exist: {event}', True)
 
     except KeyError:
-        current_error = format_res_err('root', 'An event argument must be provided.')
+        current_error = format_res_err('root', 'An event argument must be provided.', True)
 
 def path_switcher(path: str, data: dict) -> dict:
     """Loops over the paths and sends data accordingly.
@@ -110,7 +121,7 @@ def path_switcher(path: str, data: dict) -> dict:
             return request_switcher_root(data)
     else:
         global current_error
-        current_error = format_res_err('global', f'The path {path} couldn\'t be found.')
+        current_error = format_res_err('global', f'The path {path} couldn\'t be found.', True)
 
 async def serve(wss: WebSocketClientProtocol, path: str) -> None:
         """Called only by websockets.serve.
@@ -143,7 +154,7 @@ async def serve(wss: WebSocketClientProtocol, path: str) -> None:
 
                 except JSONDecodeError:
                     if not current_error:
-                        await wss.send(format_res_err('global', 'Invalid data format.'))
+                        await wss.send(format_res_err('global', 'Invalid data format.', True))
 
                 finally:
                     current_error = None
