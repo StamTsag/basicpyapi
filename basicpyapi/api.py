@@ -2,6 +2,7 @@
 import asyncio
 from json import dumps, loads
 from json.decoder import JSONDecodeError
+from logging import DEBUG, NOTSET, StreamHandler, getLogger
 from os import environ
 from socket import gethostbyname, gethostname
 from typing import Callable, Dict
@@ -20,15 +21,25 @@ total_requests: int = 0
 
 registered_responses: Dict[str, Callable] = {}
 
+load_dotenv()
+
+# Setup logging.
+log = getLogger('basicpyapi')
+
+if environ.get('BASICPYAPI_LOGGING') == 'True':
+    log.setLevel(DEBUG)
+    log.addHandler(StreamHandler())
+
+else:
+    log.setLevel(NOTSET)
+    
 def main():
     # Handles server startup.
-    load_dotenv()
-    
     port = environ.get('PORT', 5000)
 
     start_server = ws_serve(serve, '0.0.0.0', port)
 
-    print(f'Server running at: {gethostbyname(gethostname())}:{port}')
+    log.info(f'Server running at: {gethostbyname(gethostname())}:{port}')
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server)
@@ -37,6 +48,7 @@ def main():
         loop.run_forever()
         
     except KeyboardInterrupt:
+        log.info('Server stopped manually.')
         pass
 
 def format_res(event_name: str, is_no_event_response: bool = False, **kwargs) -> dict:
@@ -106,7 +118,7 @@ async def serve(wss: WebSocketClientProtocol, *args, **kwargs) -> None:
         Args:
             wss (WebSocketClientProtocol): The websocket client.
         """
-        print('A client has connected.')
+        log.info('A client has connected.')
         
         try:
             while True:
@@ -120,10 +132,10 @@ async def serve(wss: WebSocketClientProtocol, *args, **kwargs) -> None:
                     if result and not current_error:
                         await wss.send(result)
                         
-                        print(f'Reply sent for \'{data["event"]}\'.')
+                        log.info(f'Reply sent for \'{data["event"]}\'.')
                         
                         total_requests += 1
-                        print(f'Requests: {total_requests}')
+                        log.info(f'Requests: {total_requests}')
                         
                     else:
                         await wss.send(current_error)
@@ -136,7 +148,7 @@ async def serve(wss: WebSocketClientProtocol, *args, **kwargs) -> None:
                     current_error = None
                     
         except ConnectionClosed:
-            print('A client has disconnected.')
+            log.info('A client has disconnected.')
 
 # Decorators
 def response(func: Callable = None, name: str = '') -> Callable:
@@ -147,8 +159,16 @@ def response(func: Callable = None, name: str = '') -> Callable:
         name (str, optional): The required name of the event with which this is called. Defaults to ''.
     """
     def wrapper(func: Callable) -> Callable:
-        registered_responses[func.__name__ if not name else name] = func
+        func_name = func.__name__ if not name else name
     
+        if func_name in registered_responses:
+            log.info(f'Aborting response addition, duplicate response found: {func_name}')
+            return
+    
+        registered_responses[func_name] = func
+    
+        log.info(f'Registered response: {func_name}')
+
         return func
     return wrapper(func) if func else wrapper
 
