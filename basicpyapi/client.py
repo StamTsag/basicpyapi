@@ -1,11 +1,9 @@
+""" Shadofer#6681 """
 import asyncio
-
+from json import dumps, loads
 from os import environ
 
 import websockets
-
-from json import dumps, loads
-
 from dotenv import load_dotenv
 
 server_port = None

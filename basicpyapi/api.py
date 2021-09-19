@@ -1,34 +1,24 @@
 """ Shadofer#6681 """
 import asyncio
-
-from websockets import serve as ws_serve, WebSocketClientProtocol
-from websockets.exceptions import ConnectionClosed
-
+from json import dumps, loads
+from json.decoder import JSONDecodeError
 from os import environ
-
+from socket import gethostbyname, gethostname
+from typing import Callable, Dict
 from uuid import uuid4
 
-from json import dumps, loads
-
-from json.decoder import JSONDecodeError
-
-from socket import gethostname, gethostbyname
-
 from dotenv import load_dotenv
-
-PING_INTERVAL = 5
-PING_TIMEOUT = 5
-
-SUPPORTED_PATHS = ['/']
-
-# ROOT /
-SUPPORTED_REQUESTS_ROOT = ['authenticate']
+from websockets import WebSocketClientProtocol
+from websockets import serve as ws_serve
+from websockets.exceptions import ConnectionClosed
 
 # Used by path_switcher and request_switchers.
 current_error: str = None
 
 # Telemetry
 total_requests: int = 0
+
+registered_responses: Dict[str, Callable] = {}
 
 def main():
     # Handles server startup.
@@ -86,11 +76,11 @@ def format_res_err(event_name: str, error_message: str, is_no_event_response: bo
     
     return dumps(final_dict)
     
-def request_switcher_root(data: dict) -> dict:
-    """Switches response according to the data provided. Only for '/', root.
+def request_switcher(data: dict) -> dict:
+    """Switches response according to the data provided.
 
     Args:
-        data (dict): The data provided by __path_switcher.
+        data (dict): The data provided by serve.
 
     Returns:
         dict: The response according to the request. May be None, which means the request is invalid.
@@ -100,9 +90,9 @@ def request_switcher_root(data: dict) -> dict:
         
         event = data['event']
 
-        if event in SUPPORTED_REQUESTS_ROOT:
-            if event == 'authenticate':
-                return format_res(event, uid=str(uuid4()))
+        # check if the event is a registered response, unpack function's returned dict values
+        if event in registered_responses:
+            return format_res(event, **registered_responses[event]())
 
         else:
             current_error = format_res_err('rootEvent', f'The requested event doesn\'t exist: {event}', True)
@@ -110,29 +100,11 @@ def request_switcher_root(data: dict) -> dict:
     except KeyError:
         current_error = format_res_err('root', 'An event argument must be provided.', True)
 
-def path_switcher(path: str, data: dict) -> dict:
-    """Loops over the paths and sends data accordingly.
-
-    Args:
-        path (str): The path which the client has requested.
-        data (dict): The data, which will be used if the path is supported.
-
-    Returns:
-        dict: The output result either from this function or from a __request_switcher.
-    """
-    if path in SUPPORTED_PATHS:
-        if path == '/':
-            return request_switcher_root(data)
-    else:
-        global current_error
-        current_error = format_res_err('global', f'The path {path} couldn\'t be found.', True)
-
-async def serve(wss: WebSocketClientProtocol, path: str) -> None:
+async def serve(wss: WebSocketClientProtocol, *args, **kwargs) -> None:
         """Called only by websockets.serve.
 
         Args:
             wss (WebSocketClientProtocol): The websocket client.
-            path (str): The path which the client wants to access.
         """
         print('A client has connected.')
         
@@ -143,7 +115,7 @@ async def serve(wss: WebSocketClientProtocol, path: str) -> None:
                     
                     data = loads(await wss.recv())
 
-                    result = path_switcher(path, data)
+                    result = request_switcher(data)
 
                     if result and not current_error:
                         await wss.send(result)
@@ -165,6 +137,21 @@ async def serve(wss: WebSocketClientProtocol, path: str) -> None:
                     
         except ConnectionClosed:
             print('A client has disconnected.')
+
+# Decorators
+def response(func: Callable = None, name: str = '') -> Callable:
+    def wrapper(func: Callable) -> Callable:
+        registered_responses[func.__name__ if not name else name] = func
+    
+        print(registered_responses)
+    
+        return func
+    return wrapper(func) if func else wrapper
+
+# Registered runtime responses
+@response(name='authenticate')
+def auth():
+    return dict(uid=str(uuid4()))
 
 if __name__ == '__main__':
     main()
