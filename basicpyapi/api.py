@@ -143,8 +143,6 @@ def response(func: Callable = None, name: str = '') -> Callable:
     def wrapper(func: Callable) -> Callable:
         registered_responses[func.__name__ if not name else name] = func
     
-        print(registered_responses)
-    
         return func
     return wrapper(func) if func else wrapper
 
