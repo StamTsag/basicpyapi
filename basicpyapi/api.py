@@ -58,7 +58,9 @@ def format_res(event_name: str, is_no_event_response: bool = False, **kwargs) ->
     Returns:
         dict: The formatted response.
     """
-    final_dict = {'event': f'{event_name}Reply', **kwargs}
+    final_dict = {'event': f'{event_name}Reply'}
+    
+    final_dict['data'] = {**kwargs}
     
     if not is_no_event_response:
         final_dict['originalEvent'] = event_name
@@ -75,7 +77,9 @@ def format_res_err(event_name: str, error_message: str, is_no_event_response: bo
     Returns:
         dict: The formatted error response.
     """
-    final_dict = {'event': f'{event_name}Error', 'message': error_message}
+    final_dict = {'event': f'{event_name}Error'}
+    
+    final_dict['data'] = {'message': error_message}
     
     if not is_no_event_response:
         final_dict['originalEvent'] = event_name

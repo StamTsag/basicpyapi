@@ -42,7 +42,7 @@ async def connection_stream():
         while True:
             auth_reply = loads(await wss.recv())
             
-            print(f'Authentication UID: {auth_reply["uid"]}')
+            print(f'Authentication UID: {auth_reply["data"]["uid"]}')
 
 if __name__ == '__main__':
     main()
