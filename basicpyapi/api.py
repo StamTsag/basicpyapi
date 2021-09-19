@@ -140,6 +140,12 @@ async def serve(wss: WebSocketClientProtocol, *args, **kwargs) -> None:
 
 # Decorators
 def response(func: Callable = None, name: str = '') -> Callable:
+    """Marks a response as callable with an event.
+
+    Args:
+        func (Callable, optional): The function to mark. Defaults to None.
+        name (str, optional): The required name of the event with which this is called. Defaults to ''.
+    """
     def wrapper(func: Callable) -> Callable:
         registered_responses[func.__name__ if not name else name] = func
     
