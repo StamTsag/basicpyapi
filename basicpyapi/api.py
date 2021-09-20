@@ -39,11 +39,11 @@ def main():
 
     start_server = ws_serve(serve, '0.0.0.0', port)
 
-    log.info(f'Server running at: {gethostbyname(gethostname())}:{port}')
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(start_server)
     
+    log.info(f'Server running at: {gethostbyname(gethostname())}:{port}')
+
     try:
         loop.run_forever()
         
