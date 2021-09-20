@@ -40,8 +40,14 @@ def main():
     start_server = ws_serve(serve, '0.0.0.0', port)
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_server)
+
+    try:
+        loop.run_until_complete(start_server)
     
+    except OSError:
+        log.error(f'Port {port} is already in use, aborting.')
+        return
+
     log.info(f'Server running at: {gethostbyname(gethostname())}:{port}')
 
     try:
