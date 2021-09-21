@@ -27,10 +27,13 @@ load_dotenv()
 log = getLogger('basicpyapi')
 
 if environ.get('BASICPYAPI_LOGGING') == 'True':
+    print('Logging enabled.')
     log.setLevel(DEBUG)
     log.addHandler(StreamHandler())
 
 else:
+    # Atleast inform the user nothing is wrong.
+    print('Logging disabled.')
     log.setLevel(NOTSET)
     
 def main():
