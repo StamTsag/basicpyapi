@@ -3,8 +3,9 @@ import asyncio
 from json import dumps, loads
 from json.decoder import JSONDecodeError
 from logging import DEBUG, NOTSET, StreamHandler, getLogger
-from os import environ
+from os import environ, mkdir, path
 from socket import gethostbyname, gethostname
+from time import strftime
 from typing import Callable, Dict
 from uuid import uuid4
 
@@ -25,17 +26,33 @@ load_dotenv()
 
 # Setup logging.
 log = getLogger('basicpyapi')
+log_file: str = None
+logging_enabled: bool = False
+logging_time_format: str = '%d/%m/%Y %H:%M:%S'
 
 if environ.get('BASICPYAPI_LOGGING') == 'True':
-    print('Logging enabled.')
+    log_file = 'logs.txt' # default
+
+    if 'BASICPYAPI_LOG_FILE' in environ:
+        # check extension
+        if environ['BASICPYAPI_LOG_FILE'][::-4] == '.txt':
+            log_file = environ['BASICPYAPI_LOG_FILE']
+
+    if not path.isfile(f'logs/{log_file}'):
+        mkdir('logs')
+        open(f'logs/{log_file}', 'w').close()
+
+    print(f'Logging enabled, errors output to logs/{log_file}.')
     log.setLevel(DEBUG)
     log.addHandler(StreamHandler())
+
+    logging_enabled = True
 
 else:
     # Atleast inform the user nothing is wrong.
     print('Logging disabled.')
     log.setLevel(NOTSET)
-    
+
 def main():
     # Handles server startup.
     port = environ.get('PORT', 5000)
@@ -44,21 +61,36 @@ def main():
 
     loop = asyncio.get_event_loop()
 
+    # Handle all kinds of errors.
     try:
         loop.run_until_complete(start_server)
-    
-    except OSError:
-        log.error(f'Port {port} is already in use, aborting.')
-        return
 
-    log.info(f'Server running at: {gethostbyname(gethostname())}:{port}')
+        log.info(f'Server running at: {gethostbyname(gethostname())}:{port}')
 
-    try:
         loop.run_forever()
-        
+
     except KeyboardInterrupt:
         log.info('Server stopped manually.')
-        pass
+
+    except BaseException as e:
+        save_log(f'{e.__class__.__name__}: {e}')
+
+def save_log(log_txt, is_exc: bool = False) -> None:
+    """Saves a log to the target log_file, if enabled.
+
+    Args:
+        log_txt: The text to save.
+        is_exc (bool, optional): Only pass for when an exception doesnt derive from BaseException. Defaults to False.
+    """
+    if not logging_enabled:
+        return
+
+    with open(f'logs/{log_file}', 'a') as f:
+        # generate time now, dont set it before
+        f.write(f'[{strftime(logging_time_format)}] {log_txt}\n')
+
+    if isinstance(log_txt, BaseException) or is_exc:
+        log.error(f'An error has been logged.')
 
 def format_res(event_name: str, is_no_event_response: bool = False, **kwargs) -> dict:
     """Constructs a basic formatted response with an event and extra arguments.
@@ -96,7 +128,7 @@ def format_res_err(event_name: str, error_message: str, is_no_event_response: bo
         final_dict['originalEvent'] = event_name
     
     return dumps(final_dict)
-    
+
 def request_switcher(data: dict) -> dict:
     """Switches response according to the data provided.
 
