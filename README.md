@@ -21,3 +21,15 @@
 **For a complete server breakdown, check out [TowerVerse](https://github.com/TowerVerse/towerverseserver).**
 
 **For a complete API breakdown, check out [Dogey](https://github.com/Shadofer/dogey).**
+
+## Installation
+
+**```pip install -r requirements.txt```**
+
+**Tip: Rename ```env.example``` to ```.env``` in order to setup customised options for the server.**
+
+## Running
+
+**```python3 basicpyapi/api.py``` to start the websockets server.**
+
+**```python3 basicpyapi/client.py``` to run a preconfigured client.**
